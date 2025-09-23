@@ -1,0 +1,7 @@
+vendor
+vendor/
+vendor/*
+vendor/composer/
+vendor/composer/*
+vendor/composer/*.php
+composer.lock

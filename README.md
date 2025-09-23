@@ -1,61 +1,303 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Yamato Laravel API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A modern Laravel 12 backend intended for consumption by a React (Vite) SPA or other clients. This repo is Docker-friendly and ships with a dev stack using **Nginx + PHP-FPM (8.2) + Postgres 16 + Redis + Mailpit**.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Contents
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Overview
+- Architecture
+- Requirements
+- Quick Start (Docker, dev-friendly)
+- Environment Variables
+- Database (Migrations & Seeding)
+- Queues & Jobs
+- Running Tests
+- Useful Make Targets
+- Troubleshooting
+- Project Structure
+- License
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Overview
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Yamato is a RESTful API that exposes resources for the application domain (auth, users, files, etc.). It targets Laravel 12 and follows familiar Laravel conventions for controllers, requests, resources, and policies.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Architecture
 
-## Laravel Sponsors
+```text
+                Client (React / Postman / Mobile)
+                                |
+                                v
++-------------------------------+----------------------------------+
+|                         Docker Network                           |
+|                                                                  |
+|   +---------+        +------------------+         +-------------+|
+|   |  Nginx  | -----> |   PHP-FPM 8.2    |  -----> |  Postgres   ||
+|   | :80     |        |  Laravel 12 API  |         |   :5432     ||
+|   +---------+        +------------------+         +-------------+|
+|          |                      |                     ^          |
+|          |                      v                     |          |
+|          |                +-----------+               |          |
+|          |                |  Redis    | <-------------+          |
+|          |                |   :6379   |                          |
+|          |                                                     +--+
+|          +----------------------------------------------------> Mailpit
+|                                                                UI :8025 / SMTP :1025
++--------------------------------------------------------------------------+
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+## Requirements
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+- Docker Engine and Compose v2
+- Git
+- (Optional) Node 18+ if you run the SPA locally
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Quick Start (Docker, dev-friendly)
 
-## Code of Conduct
+This API is intended to be developed with the **bind-mounted** Docker setup so code edits are instant (no rebuilds). Use the companion docker repo or bring the following files into your project:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- `docker-compose.yml` (services: nginx, app, postgres, redis, mailpit)
+- `docker/php/Dockerfile`
+- `docker/nginx/default.conf`
+- `scripts/dev-bootstrap.sh`
+- `Makefile`
 
-## Security Vulnerabilities
+### 1) Clone the API
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+git clone https://github.com/abrahamVado/Yamato-Laravel-API.git yamato-api
+cd yamato-api
+```
+
+### 2) Create and configure `.env`
+
+```bash
+cp .env.example .env
+
+# Minimal DB/Redis/Mailpit values for Docker
+# (If using the companion docker stack, these hosts/ports are correct)
+sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
+sed -i 's/^DB_HOST=.*/DB_HOST=postgres/' .env
+sed -i 's/^DB_PORT=.*/DB_PORT=5432/' .env
+sed -i 's/^DB_DATABASE=.*/DB_DATABASE=yamato/' .env
+sed -i 's/^DB_USERNAME=.*/DB_USERNAME=postgres/' .env
+sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=secret123/' .env
+
+# Redis
+grep -q '^REDIS_HOST=' .env || echo 'REDIS_HOST=redis' >> .env
+grep -q '^REDIS_PORT=' .env || echo 'REDIS_PORT=6379' >> .env
+
+# Mail (Mailpit)
+grep -q '^MAIL_MAILER=' .env || echo 'MAIL_MAILER=smtp' >> .env
+grep -q '^MAIL_HOST=' .env   || echo 'MAIL_HOST=mailpit' >> .env
+grep -q '^MAIL_PORT=' .env   || echo 'MAIL_PORT=1025' >> .env
+grep -q '^MAIL_ENCRYPTION=' .env || echo 'MAIL_ENCRYPTION=null' >> .env
+grep -q '^MAIL_USERNAME=' .env || echo 'MAIL_USERNAME=null' >> .env
+grep -q '^MAIL_PASSWORD=' .env || echo 'MAIL_PASSWORD=null' >> .env
+
+# App URL & Sanctum (if SPA uses cookie auth)
+sed -i 's|^APP_URL=.*|APP_URL=http://localhost|' .env
+grep -q '^SESSION_DOMAIN=' .env || echo 'SESSION_DOMAIN=localhost' >> .env
+grep -q '^SANCTUM_STATEFUL_DOMAINS=' .env || echo 'SANCTUM_STATEFUL_DOMAINS=localhost' >> .env
+```
+
+### 3) Start the Docker stack
+
+Run from the **docker project** that contains `docker-compose.yml`. If you used the companion docker repo, it typically bind-mounts your API at `./app`:
+```bash
+# in the docker project root
+bash scripts/dev-bootstrap.sh
+# or, manually:
+docker compose up -d --build postgres redis mailpit app nginx
+```
+
+### 4) Install & migrate
+
+```bash
+# inside container
+docker compose exec app bash -lc 'composer install && php artisan key:generate && php artisan migrate && php artisan storage:link || true'
+```
+
+Open:
+- API: http://localhost
+- Mailpit UI: http://localhost:8025
+
+---
+
+## Environment Variables (minimum)
+
+```dotenv
+APP_NAME=Yamato
+APP_ENV=local
+APP_KEY=base64:xxx       # generated by php artisan key:generate
+APP_DEBUG=true
+APP_URL=http://localhost
+
+# Database
+DB_CONNECTION=pgsql
+DB_HOST=postgres
+DB_PORT=5432
+DB_DATABASE=yamato
+DB_USERNAME=postgres
+DB_PASSWORD=secret123
+
+# Redis
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+# Mail
+MAIL_MAILER=smtp
+MAIL_HOST=mailpit
+MAIL_PORT=1025
+MAIL_ENCRYPTION=null
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+
+# Sanctum / Session (if SPA cookie auth)
+SESSION_DOMAIN=localhost
+SANCTUM_STATEFUL_DOMAINS=localhost
+```
+
+---
+
+## Database
+
+Run migrations:
+```bash
+docker compose exec app php artisan migrate
+```
+
+Seed data:
+```bash
+docker compose exec app php artisan db:seed
+# or
+docker compose exec app php artisan migrate:fresh --seed
+```
+
+Import an external Postgres dump:
+```bash
+# host -> container
+docker compose exec -T postgres psql -U postgres -d yamato < dump.sql
+```
+
+---
+
+## Queues & Jobs
+
+Start a worker:
+```bash
+docker compose exec -d app php artisan queue:work
+```
+Stop workers:
+```bash
+docker compose exec app php artisan queue:restart
+```
+
+---
+
+## Running Tests
+
+```bash
+docker compose exec app bash -lc './vendor/bin/phpunit'
+# or, for Pest:
+docker compose exec app bash -lc './vendor/bin/pest'
+```
+
+---
+
+## Useful Make Targets
+
+If you use the companion Makefile:
+
+```bash
+make up        # build & start
+make down      # stop containers
+make restart   # rebuild & restart
+make logs      # tail logs for nginx + app + postgres
+make shell     # bash into php-fpm
+make migrate   # php artisan migrate
+make fresh     # migrate:fresh --seed
+make tinker    # artisan tinker
+make perms     # fix storage/bootstrap perms
+```
+
+---
+
+## Troubleshooting
+
+**Docker Compose warning: `version is obsolete`**  
+Safe to delete `version: "3.9"` from `docker-compose.yml`.
+
+**Cannot bind port 5432/6379**  
+A service is using that port on your host. Either stop it or remove `ports:` from the compose service (internal networking works with `DB_HOST=postgres`, `REDIS_HOST=redis`).
+
+**Password authentication failed for user "postgres"**  
+Ensure `.env` matches the compose env:
+```
+DB_HOST=postgres
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=secret123
+```
+Then clear config:
+```bash
+docker compose exec app php artisan config:clear
+```
+
+**502 Bad Gateway**  
+Check app logs:
+```bash
+docker compose logs -f app nginx
+```
+Usually missing `APP_KEY`, wrong `.env`, or PHP crashed. Regenerate key:
+```bash
+docker compose exec app php artisan key:generate
+```
+
+**Permissions**  
+If writes fail in `storage/` or `bootstrap/cache/`:
+```bash
+docker compose exec app bash -lc   "chown -R www-data:www-data storage bootstrap/cache && chmod -R ug+rw storage bootstrap/cache"
+```
+
+---
+
+## Project Structure (typical)
+
+```
+app/
+  Http/
+    Controllers/
+    Middleware/
+    Requests/
+  Models/
+  Policies/
+bootstrap/
+config/
+database/
+  factories/
+  migrations/
+  seeders/
+public/
+resources/
+routes/
+  api.php
+  web.php
+storage/
+tests/
+```
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT (or the license declared in this repository).
