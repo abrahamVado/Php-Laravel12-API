@@ -1,54 +1,64 @@
 # Yamato Laravel API
 
-A modern Laravel 12 backend intended for consumption by a React (Vite) SPA or other clients. This repo is Docker-friendly and ships with a dev stack using **Nginx + PHP-FPM (8.2) + Postgres 16 + Redis + Mailpit**.
+![Laravel 12](https://img.shields.io/badge/Laravel-12-red)
+![Docker Ready](https://img.shields.io/badge/Docker-ready-blue)
+![Postgres 16](https://img.shields.io/badge/Postgres-16-blue)
+![License: MIT](https://img.shields.io/badge/License-MIT-green)
+
+A modern Laravel 12 backend intended for consumption by a React (Vite) SPA or other clients. 
+This repo is Docker-friendly and ships with a dev stack using **Nginx + PHP-FPM (8.2) + Postgres 16 + Redis + Mailpit**.
 
 ---
 
 ## Contents
-
-- Overview
-- Architecture
-- Requirements
-- Quick Start (Docker, dev-friendly)
-- Environment Variables
-- Database (Migrations & Seeding)
-- Queues & Jobs
-- Running Tests
-- Useful Make Targets
-- Troubleshooting
-- Project Structure
-- License
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Requirements](#requirements)
+- [Quick Start (Docker, dev-friendly)](#quick-start-docker-dev-friendly)
+- [Environment Variables](#environment-variables-minimum)
+- [Database](#database)
+- [Queues & Jobs](#queues--jobs)
+- [Running Tests](#running-tests)
+- [Useful Make Targets](#useful-make-targets)
+- [Troubleshooting](#troubleshooting)
+- [Project Structure](#project-structure-typical)
+- [License](#license)
 
 ---
 
 ## Overview
 
-Yamato is a RESTful API that exposes resources for the application domain (auth, users, files, etc.). It targets Laravel 12 and follows familiar Laravel conventions for controllers, requests, resources, and policies.
+Yamato is a RESTful API that exposes resources for the application domain (auth, users, files, etc.). 
+It targets Laravel 12 and follows familiar Laravel conventions for controllers, requests, resources, and policies.
 
 ---
 
 ## Architecture
 
-```text
-                Client (React / Postman / Mobile)
-                                |
-                                v
-+-------------------------------+----------------------------------+
-|                         Docker Network                           |
-|                                                                  |
-|   +---------+        +------------------+         +-------------+|
-|   |  Nginx  | -----> |   PHP-FPM 8.2    |  -----> |  Postgres   ||
-|   | :80     |        |  Laravel 12 API  |         |   :5432     ||
-|   +---------+        +------------------+         +-------------+|
-|          |                      |                     ^          |
-|          |                      v                     |          |
-|          |                +-----------+               |          |
-|          |                |  Redis    | <-------------+          |
-|          |                |   :6379   |                          |
-|          |                                                     +--+
-|          +----------------------------------------------------> Mailpit
-|                                                                UI :8025 / SMTP :1025
-+--------------------------------------------------------------------------+
+```
+Yamato-Laravel-API/
+├─ app/
+│  ├─ Http/
+│  │  ├─ Controllers/        # API controllers (Auth, Users, etc.)
+│  │  ├─ Middleware/
+│  │  ├─ Requests/           # Form Request validators
+│  │  └─ Resources/          # API Resources (transformers)
+│  ├─ Models/                # Eloquent models
+│  └─ Providers/
+├─ bootstrap/
+├─ config/
+├─ database/
+│  ├─ factories/
+│  ├─ migrations/            # Schema migrations
+│  └─ seeders/
+├─ public/                   # Public web root (index.php)
+├─ resources/
+├─ routes/
+│  ├─ api.php                # API routes
+│  └─ web.php
+├─ storage/
+├─ tests/
+└─ README.md
 ```
 
 ---
@@ -63,13 +73,10 @@ Yamato is a RESTful API that exposes resources for the application domain (auth,
 
 ## Quick Start (Docker, dev-friendly)
 
-This API is intended to be developed with the **bind-mounted** Docker setup so code edits are instant (no rebuilds). Use the companion docker repo or bring the following files into your project:
+This API is intended to be developed with the **bind-mounted** Docker setup so code edits are instant (no rebuilds). 
 
-- `docker-compose.yml` (services: nginx, app, postgres, redis, mailpit)
-- `docker/php/Dockerfile`
-- `docker/nginx/default.conf`
-- `scripts/dev-bootstrap.sh`
-- `Makefile`
+> ⚠️ This repo expects the [Yamato Docker Stack](https://github.com/abrahamVado/Yamato-Docker)  
+> Or you can copy the `docker-compose.yml` and configs from that repo into your project.
 
 ### 1) Clone the API
 
@@ -82,54 +89,20 @@ cd yamato-api
 
 ```bash
 cp .env.example .env
-
-# Minimal DB/Redis/Mailpit values for Docker
-# (If using the companion docker stack, these hosts/ports are correct)
-sed -i 's/^DB_CONNECTION=.*/DB_CONNECTION=pgsql/' .env
-sed -i 's/^DB_HOST=.*/DB_HOST=postgres/' .env
-sed -i 's/^DB_PORT=.*/DB_PORT=5432/' .env
-sed -i 's/^DB_DATABASE=.*/DB_DATABASE=yamato/' .env
-sed -i 's/^DB_USERNAME=.*/DB_USERNAME=postgres/' .env
-sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=secret123/' .env
-
-# Redis
-grep -q '^REDIS_HOST=' .env || echo 'REDIS_HOST=redis' >> .env
-grep -q '^REDIS_PORT=' .env || echo 'REDIS_PORT=6379' >> .env
-
-# Mail (Mailpit)
-grep -q '^MAIL_MAILER=' .env || echo 'MAIL_MAILER=smtp' >> .env
-grep -q '^MAIL_HOST=' .env   || echo 'MAIL_HOST=mailpit' >> .env
-grep -q '^MAIL_PORT=' .env   || echo 'MAIL_PORT=1025' >> .env
-grep -q '^MAIL_ENCRYPTION=' .env || echo 'MAIL_ENCRYPTION=null' >> .env
-grep -q '^MAIL_USERNAME=' .env || echo 'MAIL_USERNAME=null' >> .env
-grep -q '^MAIL_PASSWORD=' .env || echo 'MAIL_PASSWORD=null' >> .env
-
-# App URL & Sanctum (if SPA uses cookie auth)
-sed -i 's|^APP_URL=.*|APP_URL=http://localhost|' .env
-grep -q '^SESSION_DOMAIN=' .env || echo 'SESSION_DOMAIN=localhost' >> .env
-grep -q '^SANCTUM_STATEFUL_DOMAINS=' .env || echo 'SANCTUM_STATEFUL_DOMAINS=localhost' >> .env
+# Then adjust DB, Redis, and Mailpit values as needed
 ```
 
 ### 3) Start the Docker stack
 
-Run from the **docker project** that contains `docker-compose.yml`. If you used the companion docker repo, it typically bind-mounts your API at `./app`:
 ```bash
-# in the docker project root
-bash scripts/dev-bootstrap.sh
-# or, manually:
 docker compose up -d --build postgres redis mailpit app nginx
 ```
 
 ### 4) Install & migrate
 
 ```bash
-# inside container
 docker compose exec app bash -lc 'composer install && php artisan key:generate && php artisan migrate && php artisan storage:link || true'
 ```
-
-Open:
-- API: http://localhost
-- Mailpit UI: http://localhost:8025
 
 ---
 
@@ -138,11 +111,10 @@ Open:
 ```dotenv
 APP_NAME=Yamato
 APP_ENV=local
-APP_KEY=base64:xxx       # generated by php artisan key:generate
+APP_KEY=base64:xxx
 APP_DEBUG=true
 APP_URL=http://localhost
 
-# Database
 DB_CONNECTION=pgsql
 DB_HOST=postgres
 DB_PORT=5432
@@ -150,11 +122,9 @@ DB_DATABASE=yamato
 DB_USERNAME=postgres
 DB_PASSWORD=secret123
 
-# Redis
 REDIS_HOST=redis
 REDIS_PORT=6379
 
-# Mail
 MAIL_MAILER=smtp
 MAIL_HOST=mailpit
 MAIL_PORT=1025
@@ -162,7 +132,6 @@ MAIL_ENCRYPTION=null
 MAIL_USERNAME=null
 MAIL_PASSWORD=null
 
-# Sanctum / Session (if SPA cookie auth)
 SESSION_DOMAIN=localhost
 SANCTUM_STATEFUL_DOMAINS=localhost
 ```
@@ -172,20 +141,20 @@ SANCTUM_STATEFUL_DOMAINS=localhost
 ## Database
 
 Run migrations:
+
 ```bash
 docker compose exec app php artisan migrate
 ```
 
 Seed data:
+
 ```bash
 docker compose exec app php artisan db:seed
-# or
-docker compose exec app php artisan migrate:fresh --seed
 ```
 
-Import an external Postgres dump:
+Import Postgres dump:
+
 ```bash
-# host -> container
 docker compose exec -T postgres psql -U postgres -d yamato < dump.sql
 ```
 
@@ -194,10 +163,13 @@ docker compose exec -T postgres psql -U postgres -d yamato < dump.sql
 ## Queues & Jobs
 
 Start a worker:
+
 ```bash
 docker compose exec -d app php artisan queue:work
 ```
+
 Stop workers:
+
 ```bash
 docker compose exec app php artisan queue:restart
 ```
@@ -208,65 +180,33 @@ docker compose exec app php artisan queue:restart
 
 ```bash
 docker compose exec app bash -lc './vendor/bin/phpunit'
-# or, for Pest:
-docker compose exec app bash -lc './vendor/bin/pest'
 ```
 
 ---
 
 ## Useful Make Targets
 
-If you use the companion Makefile:
-
-```bash
-make up        # build & start
-make down      # stop containers
-make restart   # rebuild & restart
-make logs      # tail logs for nginx + app + postgres
-make shell     # bash into php-fpm
-make migrate   # php artisan migrate
-make fresh     # migrate:fresh --seed
-make tinker    # artisan tinker
-make perms     # fix storage/bootstrap perms
-```
+| Command      | Description                  |
+|--------------|------------------------------|
+| `make up`    | Build & start containers     |
+| `make down`  | Stop containers              |
+| `make migrate` | Run Laravel migrations     |
+| `make fresh` | Fresh migrate + seed         |
+| `make shell` | Enter PHP container shell    |
+| `make logs`  | Tail logs from all services  |
 
 ---
 
 ## Troubleshooting
 
-**Docker Compose warning: `version is obsolete`**  
-Safe to delete `version: "3.9"` from `docker-compose.yml`.
-
-**Cannot bind port 5432/6379**  
-A service is using that port on your host. Either stop it or remove `ports:` from the compose service (internal networking works with `DB_HOST=postgres`, `REDIS_HOST=redis`).
-
-**Password authentication failed for user "postgres"**  
-Ensure `.env` matches the compose env:
-```
-DB_HOST=postgres
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=secret123
-```
-Then clear config:
-```bash
-docker compose exec app php artisan config:clear
-```
-
 **502 Bad Gateway**  
-Check app logs:
-```bash
-docker compose logs -f app nginx
-```
-Usually missing `APP_KEY`, wrong `.env`, or PHP crashed. Regenerate key:
-```bash
-docker compose exec app php artisan key:generate
-```
+Usually missing `APP_KEY` or misconfigured `.env`.  
+Fix: `docker compose exec app php artisan key:generate`
 
 **Permissions**  
-If writes fail in `storage/` or `bootstrap/cache/`:
+If writes fail in `storage/` or `bootstrap/cache/`:  
 ```bash
-docker compose exec app bash -lc   "chown -R www-data:www-data storage bootstrap/cache && chmod -R ug+rw storage bootstrap/cache"
+docker compose exec app bash -lc "chown -R www-data:www-data storage bootstrap/cache && chmod -R ug+rw storage bootstrap/cache"
 ```
 
 ---
@@ -284,7 +224,6 @@ app/
 bootstrap/
 config/
 database/
-  factories/
   migrations/
   seeders/
 public/
@@ -300,4 +239,4 @@ tests/
 
 ## License
 
-MIT (or the license declared in this repository).
+MIT
