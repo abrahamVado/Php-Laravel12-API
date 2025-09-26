@@ -29,6 +29,7 @@ Route::prefix('auth')->group(function () {
         ->middleware('web')
         ->name('auth.session.logout');
 
+
     // Magic link (stubs)
     Route::post('/magic/request', [MagicLinkController::class, 'requestLink'])->name('auth.magic.request');
     Route::post('/magic/verify', [MagicLinkController::class, 'verify'])->name('auth.magic.verify');

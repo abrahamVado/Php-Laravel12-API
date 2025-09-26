@@ -4,9 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginPasswordRequest;
+
 use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
+
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Support\Facades\Auth;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -40,6 +45,8 @@ class TokenController extends Controller
 
         $name  = $request->input('device_name', $request->userAgent() ?? 'api');
         $token = $user->createToken($name);
+
+        Auth::logout();
 
         return response()->json([
             'token' => $token->plainTextToken,
