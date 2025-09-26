@@ -61,7 +61,7 @@ Yamato-Laravel-API/
 
 ```
 
----
+
 
 ## Requirements
 
