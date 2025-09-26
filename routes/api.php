@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\Auth\WebAuthnController;
 use App\Http\Controllers\Auth\JwksController;
+use App\Http\Controllers\Secure\SecurePageController;
 
 Route::get('/health', fn () => ['ok' => true])->name('health');
 
@@ -17,14 +18,17 @@ Route::prefix('auth')->group(function () {
     // Registration + login
     Route::post('/register', [RegisterController::class, 'store'])->name('auth.register');
     Route::post('/login', [LoginController::class, 'password'])
-        ->middleware('throttle:login')
+        ->middleware(['throttle:login', 'web'])
         ->name('auth.login');
 
     // Cookie session login/logout (for SPA same-site)
     Route::post('/session/login', [SessionController::class, 'login'])
-        ->middleware('throttle:login')
+        ->middleware(['throttle:login', 'web'])
         ->name('auth.session.login');
-    Route::post('/session/logout', [SessionController::class, 'logout'])->name('auth.session.logout');
+    Route::post('/session/logout', [SessionController::class, 'logout'])
+        ->middleware('web')
+        ->name('auth.session.logout');
+
 
     // Magic link (stubs)
     Route::post('/magic/request', [MagicLinkController::class, 'requestLink'])->name('auth.magic.request');
@@ -49,6 +53,24 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Personal Access Tokens management
     Route::get('/auth/tokens', [TokenController::class, 'index'])->name('auth.tokens.index');
-    Route::post('/auth/tokens', [TokenController::class, 'store'])->name('auth.tokens.store');
     Route::delete('/auth/tokens/{id}', [TokenController::class, 'destroy'])->name('auth.tokens.destroy');
+
+    // Secure application areas (dashboard, profile, logs, etc.)
+    Route::prefix('secure')->group(function () {
+        Route::get('/dashboard', [SecurePageController::class, 'dashboard'])
+            ->name('secure.dashboard');
+        Route::get('/users', [SecurePageController::class, 'users'])
+            ->name('secure.users');
+        Route::get('/profile', [SecurePageController::class, 'profile'])
+            ->name('secure.profile');
+        Route::get('/logs', [SecurePageController::class, 'logs'])
+            ->name('secure.logs');
+        Route::get('/errors', [SecurePageController::class, 'errors'])
+            ->name('secure.errors');
+    });
 });
+
+// Personal access token issuance for first-party & third-party clients
+Route::post('/auth/tokens', [TokenController::class, 'store'])
+    ->middleware('throttle:login')
+    ->name('auth.tokens.store');

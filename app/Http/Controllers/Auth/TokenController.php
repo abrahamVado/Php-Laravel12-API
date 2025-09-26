@@ -4,11 +4,17 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginPasswordRequest;
+
+use App\Models\User;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Http\JsonResponse;
+
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Auth;
+
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Http\JsonResponse;
 
 class TokenController extends Controller
 {
@@ -19,17 +25,16 @@ class TokenController extends Controller
     {
         $credentials = $request->only('email','password');
 
-        if (! Auth::attempt($credentials)) {
+        /** @var \App\Models\User|null $user */
+        $user = User::query()->where('email', $credentials['email'])->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Invalid credentials.'],
             ]);
         }
 
-        $user = Auth::user();
-
         if ($user instanceof MustVerifyEmail && ! $user->hasVerifiedEmail()) {
-            Auth::logout();
-
             $exception = ValidationException::withMessages([
                 'email' => ['Email verification required.'],
             ]);

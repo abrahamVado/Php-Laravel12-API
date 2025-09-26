@@ -44,7 +44,9 @@ class SessionController extends Controller
 
         $request->session()->regenerate();
 
-        return response()->json(['message' => 'Session login OK']);
+        return (new UserResource($user))
+            ->additional(['meta' => ['message' => 'Session login OK']])
+            ->response();
     }
 
     public function logout(Request $request): JsonResponse
