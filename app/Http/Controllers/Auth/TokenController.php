@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginPasswordRequest;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class TokenController extends Controller
 {
@@ -18,13 +20,24 @@ class TokenController extends Controller
     {
         $credentials = $request->only('email','password');
 
-        if (! Auth::attempt($credentials)) {
+        /** @var \App\Models\User|null $user */
+        $user = User::query()->where('email', $credentials['email'])->first();
+
+        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Invalid credentials.'],
             ]);
         }
 
-        $user  = $request->user();
+        if ($user instanceof MustVerifyEmail && ! $user->hasVerifiedEmail()) {
+            $exception = ValidationException::withMessages([
+                'email' => ['Email verification required.'],
+            ]);
+            $exception->status = 403;
+
+            throw $exception;
+        }
+
         $name  = $request->input('device_name', $request->userAgent() ?? 'api');
         $token = $user->createToken($name);
 
