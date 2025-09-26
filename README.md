@@ -29,26 +29,36 @@ Yamato is a RESTful API that exposes resources for the application domain (auth,
 
 ## Architecture
 
-```text
-                Client (React / Postman / Mobile)
-                                |
-                                v
-+-------------------------------+----------------------------------+
-|                         Docker Network                           |
-|                                                                  |
-|   +---------+        +------------------+         +-------------+|
-|   |  Nginx  | -----> |   PHP-FPM 8.2    |  -----> |  Postgres   ||
-|   | :80     |        |  Laravel 12 API  |         |   :5432     ||
-|   +---------+        +------------------+         +-------------+|
-|          |                      |                     ^          |
-|          |                      v                     |          |
-|          |                +-----------+               |          |
-|          |                |  Redis    | <-------------+          |
-|          |                |   :6379   |                          |
-|          |                                                     +--+
-|          +----------------------------------------------------> Mailpit
-|                                                                UI :8025 / SMTP :1025
-+--------------------------------------------------------------------------+
+Yamato-Laravel-API/
+├─ app/
+│  ├─ Console/
+│  ├─ Exceptions/
+│  ├─ Http/
+│  │  ├─ Controllers/        # API controllers (Auth, Users, etc.)
+│  │  ├─ Middleware/
+│  │  ├─ Requests/           # Form Request validators
+│  │  └─ Resources/          # API Resources (transformers)
+│  ├─ Models/                # Eloquent models
+│  └─ Providers/
+├─ bootstrap/
+├─ config/
+├─ database/
+│  ├─ factories/
+│  ├─ migrations/            # Schema migrations
+│  └─ seeders/
+├─ public/                   # Public web root (index.php)
+├─ resources/
+│  ├─ lang/
+│  └─ views/
+├─ routes/
+│  ├─ api.php                # API routes
+│  └─ web.php
+├─ storage/
+├─ tests/
+├─ .env.example
+├─ composer.json
+└─ README.md
+
 ```
 
 ---
