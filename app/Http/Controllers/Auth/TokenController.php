@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginPasswordRequest;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -24,9 +25,23 @@ class TokenController extends Controller
             ]);
         }
 
-        $user  = $request->user();
+        $user = Auth::user();
+
+        if ($user instanceof MustVerifyEmail && ! $user->hasVerifiedEmail()) {
+            Auth::logout();
+
+            $exception = ValidationException::withMessages([
+                'email' => ['Email verification required.'],
+            ]);
+            $exception->status = 403;
+
+            throw $exception;
+        }
+
         $name  = $request->input('device_name', $request->userAgent() ?? 'api');
         $token = $user->createToken($name);
+
+        Auth::logout();
 
         return response()->json([
             'token' => $token->plainTextToken,

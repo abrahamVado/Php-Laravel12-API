@@ -16,10 +16,14 @@ Route::get('/health', fn () => ['ok' => true])->name('health');
 Route::prefix('auth')->group(function () {
     // Registration + login
     Route::post('/register', [RegisterController::class, 'store'])->name('auth.register');
-    Route::post('/login', [LoginController::class, 'password'])->name('auth.login');
+    Route::post('/login', [LoginController::class, 'password'])
+        ->middleware('throttle:login')
+        ->name('auth.login');
 
     // Cookie session login/logout (for SPA same-site)
-    Route::post('/session/login', [SessionController::class, 'login'])->name('auth.session.login');
+    Route::post('/session/login', [SessionController::class, 'login'])
+        ->middleware('throttle:login')
+        ->name('auth.session.login');
     Route::post('/session/logout', [SessionController::class, 'logout'])->name('auth.session.logout');
 
     // Magic link (stubs)
