@@ -16,7 +16,9 @@ Route::get('/health', fn () => ['ok' => true])->name('health');
 // Public auth endpoints
 Route::prefix('auth')->group(function () {
     // Registration + login
-    Route::post('/register', [RegisterController::class, 'store'])->name('auth.register');
+    Route::post('/register', [RegisterController::class, 'store'])
+        ->middleware(['throttle:register'])
+        ->name('auth.register');
     Route::post('/login', [LoginController::class, 'password'])
         ->middleware(['throttle:login', 'web'])
         ->name('auth.login');

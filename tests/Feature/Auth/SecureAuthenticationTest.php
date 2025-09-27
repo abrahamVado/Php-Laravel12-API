@@ -30,6 +30,25 @@ class SecureAuthenticationTest extends TestCase
         Notification::assertSentTo($user, VerifyEmail::class);
     }
 
+    public function test_registration_is_rate_limited_after_five_attempts(): void
+    {
+        $payload = [
+            'name' => 'Rate Limited',
+            'email' => 'limited@example.com',
+            'password' => 'Str0ngP@ssword!',
+        ];
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $response = $this->postJson('/api/auth/register', $payload);
+
+            $attempt === 0
+                ? $response->assertCreated()
+                : $response->assertStatus(422);
+        }
+
+        $this->postJson('/api/auth/register', $payload)->assertStatus(429);
+    }
+
     public function test_registration_normalizes_mixed_case_email(): void
     {
         Notification::fake();
