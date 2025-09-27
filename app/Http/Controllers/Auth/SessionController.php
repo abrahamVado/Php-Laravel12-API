@@ -14,6 +14,12 @@ class SessionController extends Controller
 {
     public function login(Request $request): JsonResponse
     {
+        if (is_string($email = $request->input('email'))) {
+            $request->merge([
+                'email' => str($email)->trim()->lower()->toString(),
+            ]);
+        }
+
         $validated = $request->validate([
             'email'    => ['required', 'email'],
             'password' => ['required', 'string'],

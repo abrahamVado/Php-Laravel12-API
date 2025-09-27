@@ -30,6 +30,23 @@ class SecureAuthenticationTest extends TestCase
         Notification::assertSentTo($user, VerifyEmail::class);
     }
 
+    public function test_registration_normalizes_mixed_case_email(): void
+    {
+        Notification::fake();
+
+        $response = $this->postJson('/api/auth/register', [
+            'name' => 'Janet Doe',
+            'email' => ' Mixed.Case@Example.COM ',
+            'password' => 'Str0ngP@ssword!',
+        ]);
+
+        $response->assertCreated();
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'mixed.case@example.com',
+        ]);
+    }
+
     public function test_session_login_requires_verified_email(): void
     {
         $user = User::factory()->unverified()->create([
@@ -56,6 +73,24 @@ class SecureAuthenticationTest extends TestCase
 
         $response = $this->postJson('/api/auth/session/login', [
             'email' => $user->email,
+            'password' => 'Secret123!',
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('meta.message', 'Session login OK');
+    }
+
+    public function test_session_login_accepts_mixed_case_email(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'casey@example.com',
+            'password' => bcrypt('Secret123!'),
+        ]);
+
+        $response = $this->postJson('/api/auth/session/login', [
+            'email' => '  Casey@Example.COM ',
             'password' => 'Secret123!',
         ]);
 
@@ -104,6 +139,24 @@ class SecureAuthenticationTest extends TestCase
             'tokenable_id' => $user->id,
             'tokenable_type' => User::class,
         ]);
+    }
+
+    public function test_token_login_accepts_mixed_case_email(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'token@example.com',
+            'password' => bcrypt('Secret123!'),
+        ]);
+
+        $response = $this->postJson('/api/auth/tokens', [
+            'email' => ' Token@Example.COM ',
+            'password' => 'Secret123!',
+            'device_name' => 'phpunit',
+        ]);
+
+        $response
+            ->assertCreated()
+            ->assertJsonStructure(['token']);
     }
 
     public function test_secure_routes_require_authentication(): void
