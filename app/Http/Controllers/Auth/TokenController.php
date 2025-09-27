@@ -4,15 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginPasswordRequest;
-
 use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
-
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Support\Facades\Auth;
-
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -23,7 +19,7 @@ class TokenController extends Controller
      */
     public function store(LoginPasswordRequest $request): JsonResponse
     {
-        $credentials = $request->only('email','password');
+        $credentials = $request->safe()->only(['email', 'password']);
 
         /** @var \App\Models\User|null $user */
         $user = User::query()->where('email', $credentials['email'])->first();

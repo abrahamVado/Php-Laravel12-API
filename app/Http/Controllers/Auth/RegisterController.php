@@ -14,10 +14,12 @@ class RegisterController extends Controller
 {
     public function store(RegisterRequest $request): JsonResponse
     {
+        $data = $request->validated();
+
         $user = User::create([
-            'name'     => $request->input('name'),
-            'email'    => $request->input('email'),
-            'password' => Hash::make($request->input('password')),
+            'name'     => $data['name'],
+            'email'    => $data['email'],
+            'password' => Hash::make($data['password']),
         ]);
 
         event(new Registered($user));
