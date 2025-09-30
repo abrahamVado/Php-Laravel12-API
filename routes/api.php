@@ -46,13 +46,15 @@ Route::prefix('auth')->group(function () {
         ->middleware('web')
         ->name('auth.magic.verify');
 
-    // OAuth (stubs)
+    // OAuth login
     Route::get('/oauth/redirect/{provider}', [OAuthController::class, 'redirect'])->name('auth.oauth.redirect');
     Route::get('/oauth/callback/{provider}', [OAuthController::class, 'callback'])->name('auth.oauth.callback');
 
-    // WebAuthn (stubs)
+    // WebAuthn
     Route::post('/webauthn/options', [WebAuthnController::class, 'options'])->name('auth.webauthn.options');
-    Route::post('/webauthn/register', [WebAuthnController::class, 'register'])->name('auth.webauthn.register');
+    Route::post('/webauthn/register', [WebAuthnController::class, 'register'])
+        ->middleware('auth:sanctum')
+        ->name('auth.webauthn.register');
     Route::post('/webauthn/verify', [WebAuthnController::class, 'verify'])->name('auth.webauthn.verify');
 
     // JWKS (empty set by default)
