@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('webauthn_credentials', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('name')->nullable();
+            $table->string('credential_id')->unique();
+            $table->string('public_key');
+            $table->unsignedBigInteger('sign_count')->default(0);
+            $table->json('transports')->nullable();
+            $table->timestamp('last_used_at')->nullable();
             $table->timestamps();
         });
     }
