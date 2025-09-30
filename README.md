@@ -136,6 +136,17 @@ SESSION_DOMAIN=localhost
 SANCTUM_STATEFUL_DOMAINS=localhost
 ```
 
+### JSON Web Key Set (JWKS)
+
+Configure signing keys for the JWKS endpoint via `config/jwks.php` or environment variables:
+
+- `JWKS_PUBLIC_KEY`: Inline RSA public key (PEM) surfaced by the JWKS endpoint.
+- `JWKS_KID`: Optional key identifier published alongside the key.
+- `JWKS_ALG`: Advertised algorithm for the key (default `RS256`).
+- `JWKS_USE`: Intended usage for the key (default `sig`).
+
+You may also reference PEM file paths in `config/jwks.php` and append additional keys by extending the `keys` array.
+
 ---
 
 ## Database

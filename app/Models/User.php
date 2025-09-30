@@ -61,6 +61,22 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * OAuth/OIDC identities linked to the user.
+     */
+    public function identities(): HasMany
+    {
+        return $this->hasMany(UserIdentity::class);
+    }
+
+    /**
+     * Registered WebAuthn credentials for the user.
+     */
+    public function webauthnCredentials(): HasMany
+    {
+        return $this->hasMany(WebAuthnCredential::class);
+    }
+
+    /**
      * Roles assigned to the user.
      */
     public function roles(): BelongsToMany

@@ -13,7 +13,14 @@ return new class extends Migration
     {
         Schema::create('user_identities', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('provider');
+            $table->string('provider_id');
+            $table->string('provider_email')->nullable();
+            $table->json('data')->nullable();
             $table->timestamps();
+
+            $table->unique(['provider', 'provider_id']);
         });
     }
 
