@@ -1,6 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
+use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\TeamController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SessionController;
@@ -33,8 +39,12 @@ Route::prefix('auth')->group(function () {
 
 
     // Magic link (stubs)
-    Route::post('/magic/request', [MagicLinkController::class, 'requestLink'])->name('auth.magic.request');
-    Route::post('/magic/verify', [MagicLinkController::class, 'verify'])->name('auth.magic.verify');
+    Route::post('/magic/request', [MagicLinkController::class, 'requestLink'])
+        ->middleware('web')
+        ->name('auth.magic.request');
+    Route::post('/magic/verify', [MagicLinkController::class, 'verify'])
+        ->middleware('web')
+        ->name('auth.magic.verify');
 
     // OAuth (stubs)
     Route::get('/oauth/redirect/{provider}', [OAuthController::class, 'redirect'])->name('auth.oauth.redirect');
@@ -69,6 +79,16 @@ Route::middleware('auth:sanctum')->group(function () {
             ->name('secure.logs');
         Route::get('/errors', [SecurePageController::class, 'errors'])
             ->name('secure.errors');
+    });
+
+    // Administrative CRUD endpoints
+    Route::prefix('admin')->group(function () {
+        Route::apiResource('roles', AdminRoleController::class);
+        Route::apiResource('permissions', PermissionController::class);
+        Route::apiResource('users', AdminUserController::class);
+        Route::apiResource('profiles', ProfileController::class);
+        Route::apiResource('teams', TeamController::class);
+        Route::apiResource('settings', SettingController::class);
     });
 });
 
