@@ -90,6 +90,26 @@ class OAuthAuthenticationTest extends TestCase
         $response->assertJson(['message' => 'Unable to complete OAuth login.']);
     }
 
+    public function test_redirect_with_unsupported_provider_returns_not_found(): void
+    {
+        config(['services.socialite.providers' => ['github']]);
+
+        $response = $this->get('/api/auth/oauth/redirect/mars', ['Accept' => 'application/json']);
+
+        $response->assertNotFound();
+        $response->assertJson(['message' => 'Unsupported OAuth provider.']);
+    }
+
+    public function test_callback_with_unsupported_provider_returns_not_found(): void
+    {
+        config(['services.socialite.providers' => ['github']]);
+
+        $response = $this->getJson('/api/auth/oauth/callback/mars');
+
+        $response->assertNotFound();
+        $response->assertJson(['message' => 'Unsupported OAuth provider.']);
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();
