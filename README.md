@@ -73,10 +73,9 @@ Yamato-Laravel-API/
 
 ## Quick Start (Docker, dev-friendly)
 
-This API is intended to be developed with the **bind-mounted** Docker setup so code edits are instant (no rebuilds). 
+This API now ships with a lightweight Docker stack inspired by the Yamato Docker project so you can develop locally without hunting for extra repositories.
 
-> ⚠️ This repo expects the [Yamato Docker Stack](https://github.com/abrahamVado/Yamato-Docker)  
-> Or you can copy the `docker-compose.yml` and configs from that repo into your project.
+The included `docker-compose.yml` provisions **PHP-FPM + Nginx + Postgres 16 + Redis 7 + Mailpit** using bind mounts so code edits are reflected instantly inside the container.
 
 ### 1) Clone the API
 
@@ -88,21 +87,27 @@ cd yamato-api
 ### 2) Create and configure `.env`
 
 ```bash
-cp .env.example .env
-# Then adjust DB, Redis, and Mailpit values as needed
+cp .env.docker .env
+# Then generate a new APP_KEY once containers are running
 ```
 
 ### 3) Start the Docker stack
 
 ```bash
-docker compose up -d --build postgres redis mailpit app nginx
+docker compose up -d --build
 ```
+
+> The default ports are: API `8080`, Mailpit UI `8025`, Mailpit SMTP `1025`, Postgres `54320`, and Redis `6380`.
 
 ### 4) Install & migrate
 
 ```bash
 docker compose exec app bash -lc 'composer install && php artisan key:generate && php artisan migrate && php artisan storage:link || true'
 ```
+
+### 5) Visit the API
+
+Open http://localhost:8080/api/health to confirm the stack is running.
 
 ---
 
