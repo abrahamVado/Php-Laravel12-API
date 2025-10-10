@@ -1,0 +1,24 @@
+# Yamato API local development requirements
+#
+# This file enumerates the core services and tooling that the Yamato Laravel API expects
+# when running in a containerized environment. Use the companion scripts/check_requirements.sh
+# helper to verify the commands are available on your workstation.
+
+[services]
+PostgreSQL=16.x
+Redis=7.x
+Mailpit=1.15+
+MinIO (optional)=RECOMMENDED
+
+[tooling]
+Docker Engine=24+
+Docker Compose=2.20+
+Node.js=20+
+PNPM (optional)=8+
+
+[php]
+PHP=8.2
+Composer=2.6+
+
+[testing]
+PHPUnit=10+
