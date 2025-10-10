@@ -1,0 +1,12 @@
+services:
+  app:
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/dev.ini:/usr/local/etc/php/conf.d/dev.ini:ro
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      OPCACHE_ENABLE: "0"   # env flag we’ll wire in dev.ini
+  redis:
+    # do not publish a port in dev
+    ports: []
