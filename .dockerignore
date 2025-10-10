@@ -1,0 +1,19 @@
+# //1.- Ignore dependency directories that will be mounted from the host.
+node_modules
+vendor
+
+# //2.- Keep local environment overrides out of Docker build context.
+.env
+.env.*
+
+# //3.- Exclude VCS metadata and IDE files.
+.git
+.gitignore
+.idea
+.vscode
+
+# //4.- Prevent unnecessary cache directories from bloating the build context.
+storage/logs
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
